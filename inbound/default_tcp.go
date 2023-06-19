@@ -59,12 +59,13 @@ func (a *myInboundAdapter) loopTCPIn() {
 
 func (a *myInboundAdapter) injectTCP(conn net.Conn, metadata adapter.InboundContext) {
 	// disable golang default 15s keep-alive
-	if tcpConn, isTCP := common.Cast[*net.TCPConn](conn); isTCP {
+	tcpConn, isTCP := common.Cast[*net.TCPConn](conn)
+	if isTCP {
 		tcpConn.SetKeepAlivePeriod(3600 * time.Second)
 	}
 	ctx := log.ContextWithNewID(a.ctx)
 	metadata = a.createMetadata(conn, metadata)
-	a.logger.InfoContext(ctx, "xxxxxxxxxxxxx injectTCP")
+	a.logger.InfoContext(ctx, "xxxxxxxxxxxxx injectTCP ", isTCP)
 	a.logger.InfoContext(ctx, "inbound connection from ", metadata.Source)
 	hErr := a.connHandler.NewConnection(ctx, conn, metadata)
 	if hErr != nil {
