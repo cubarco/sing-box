@@ -8,6 +8,7 @@ import (
 	"github.com/sagernet/sing-box/adapter"
 	"github.com/sagernet/sing-box/common/proxyproto"
 	"github.com/sagernet/sing-box/log"
+	"github.com/sagernet/sing/common"
 	E "github.com/sagernet/sing/common/exceptions"
 	M "github.com/sagernet/sing/common/metadata"
 	N "github.com/sagernet/sing/common/network"
@@ -58,7 +59,9 @@ func (a *myInboundAdapter) loopTCPIn() {
 
 func (a *myInboundAdapter) injectTCP(conn net.Conn, metadata adapter.InboundContext) {
 	// disable golang default 15s keep-alive
-	conn.(*net.TCPConn).SetKeepAlivePeriod(3600 * time.Second)
+	if tcpConn, isTCP := common.Cast[*net.TCPConn](conn); isTCP {
+		tcpConn.SetKeepAlivePeriod(3600 * time.Second)
+	}
 	ctx := log.ContextWithNewID(a.ctx)
 	metadata = a.createMetadata(conn, metadata)
 	a.logger.InfoContext(ctx, "xxxxxxxxxxxxx injectTCP")
