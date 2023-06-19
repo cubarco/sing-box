@@ -8,12 +8,27 @@ import (
 	"github.com/sagernet/sing-box/adapter"
 	"github.com/sagernet/sing-box/common/proxyproto"
 	"github.com/sagernet/sing-box/log"
-	"github.com/sagernet/sing/common"
 	E "github.com/sagernet/sing/common/exceptions"
 	M "github.com/sagernet/sing/common/metadata"
 	N "github.com/sagernet/sing/common/network"
 	"github.com/sagernet/tfo-go"
 )
+
+type customListener struct {
+	net.Listener
+	log.Logger
+}
+
+func (cl *customListener) Accept() (net.Conn, error) {
+	conn, err := cl.Listener.Accept()
+	if err != nil {
+		return nil, err
+	}
+	cl.Logger.Info("xxxxxxxxx setting keepalive for real")
+	conn.(*net.TCPConn).SetKeepAlive(true)
+	conn.(*net.TCPConn).SetKeepAlivePeriod(3600 * time.Second)
+	return conn, nil
+}
 
 func (a *myInboundAdapter) ListenTCP() (net.Listener, error) {
 	var err error
@@ -24,6 +39,8 @@ func (a *myInboundAdapter) ListenTCP() (net.Listener, error) {
 	} else {
 		tcpListener, err = tfo.ListenTCP(M.NetworkFromNetAddr(N.NetworkTCP, bindAddr.Addr), bindAddr.TCPAddr())
 	}
+	a.logger.Info("xxxxxxxx setting listener")
+	tcpListener = &customListener{Listener: tcpListener, Logger: a.logger}
 	if err == nil {
 		a.logger.Info("tcp server started at ", tcpListener.Addr())
 	}
@@ -58,14 +75,8 @@ func (a *myInboundAdapter) loopTCPIn() {
 }
 
 func (a *myInboundAdapter) injectTCP(conn net.Conn, metadata adapter.InboundContext) {
-	// disable golang default 15s keep-alive
-	tcpConn, isTCP := common.Cast[*net.TCPConn](conn)
-	if isTCP {
-		tcpConn.SetKeepAlivePeriod(3600 * time.Second)
-	}
 	ctx := log.ContextWithNewID(a.ctx)
 	metadata = a.createMetadata(conn, metadata)
-	a.logger.InfoContext(ctx, "xxxxxxxxxxxxx injectTCP ", isTCP)
 	a.logger.InfoContext(ctx, "inbound connection from ", metadata.Source)
 	hErr := a.connHandler.NewConnection(ctx, conn, metadata)
 	if hErr != nil {
