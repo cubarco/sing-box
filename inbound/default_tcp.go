@@ -61,6 +61,7 @@ func (a *myInboundAdapter) injectTCP(conn net.Conn, metadata adapter.InboundCont
 	conn.(*net.TCPConn).SetKeepAlivePeriod(3600 * time.Second)
 	ctx := log.ContextWithNewID(a.ctx)
 	metadata = a.createMetadata(conn, metadata)
+	a.logger.InfoContext(ctx, "xxxxxxxxxxxxx injectTCP")
 	a.logger.InfoContext(ctx, "inbound connection from ", metadata.Source)
 	hErr := a.connHandler.NewConnection(ctx, conn, metadata)
 	if hErr != nil {
