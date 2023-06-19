@@ -3,6 +3,7 @@ package inbound
 import (
 	"context"
 	"net"
+	"time"
 
 	"github.com/sagernet/sing-box/adapter"
 	"github.com/sagernet/sing-box/common/proxyproto"
@@ -56,6 +57,8 @@ func (a *myInboundAdapter) loopTCPIn() {
 }
 
 func (a *myInboundAdapter) injectTCP(conn net.Conn, metadata adapter.InboundContext) {
+	// disable golang default 15s keep-alive
+	conn.(*net.TCPConn).SetKeepAlivePeriod(3600 * time.Second)
 	ctx := log.ContextWithNewID(a.ctx)
 	metadata = a.createMetadata(conn, metadata)
 	a.logger.InfoContext(ctx, "inbound connection from ", metadata.Source)
